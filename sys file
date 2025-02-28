@@ -1,0 +1,58 @@
+#include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+
+#define FILENAME "example.txt"
+
+int main() {
+    int fd;
+    ssize_t bytes_written, bytes_read;
+    char buffer[1024];
+
+    fd = open(FILENAME, O_CREAT | O_WRONLY | O_TRUNC, S_IRUSR | S_IWUSR);
+    if (fd == -1) {
+        perror("Error opening the file for writing");
+        return 1;
+    }
+
+    const char *data_to_write = "Hello welcome s4 operating system lab.\nWelcome to file operations in C!\n";
+   
+   
+    bytes_written = write(fd, data_to_write, strlen(data_to_write));
+    if (bytes_written == -1) {
+        perror("Error writing to the file");
+        close(fd);  
+        return 1;
+    }
+
+    printf("Written %ld bytes to the file.\n", bytes_written);
+
+  
+    close(fd);
+
+    fd = open(FILENAME, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening the file for reading");
+        return 1;
+    }
+
+    bytes_read = read(fd, buffer, sizeof(buffer) - 1);
+    if (bytes_read == -1) {
+        perror("Error reading from the file");
+        close(fd); 
+        return 1;
+    }
+
+  
+    buffer[bytes_read] = '\0';
+
+    printf("Read %ld bytes from the file:\n%s\n", bytes_read, buffer);
+
+   
+    close(fd);
+
+    return 0;
+}
