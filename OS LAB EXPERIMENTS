@@ -1,0 +1,448 @@
+SHARED MEMEMORY ? PRODUCER CONSUMER 
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<ctype.h>
+
+int in=-1,out=-1;
+int buffer[5];
+
+void consume();
+void produce(int x);
+void display();
+
+int main(){
+    int choice,item;
+    do{
+        printf("\n");
+        printf("1.Produce\n2.Consume\n3.Display\n4.Exit\n");
+        printf("Enter Choice: ");
+        scanf("%d",&choice);
+        switch(choice){
+            case 1: printf("\nEnter item to insert to buffer: ");
+                    scanf("%d",&item);
+                    produce(item);
+                    break;
+            case 2: consume();break;
+            case 3: display();break;
+            case 4: break;
+            default: printf("\nInvalid Choice\n");
+        }
+    }while(choice!=4);
+}
+
+void consume(){
+    if(in==-1){
+        printf("Nothing to consume\n");
+    }
+    else{
+        printf("Item consumed is: %d",buffer[in]);
+        if(in==out){
+            in=out=-1;
+        }
+        else{
+            in=((in+1)%5);
+        }
+    }
+}
+
+void produce(int x){
+    if(in==(out+1)%5){
+        printf("Cannot prodice till consumer haves it\n");
+    }
+    else{
+        if(in==-1){
+            in=out=0;
+        }
+        else{
+            out=((out+1)%5);
+            
+        }
+        buffer[out]=x;
+	printf("\nThe produced item is: %d",buffer[out]);
+    }
+}
+
+void display(){
+    int i;
+    printf("\nThe buffer contains:\n");
+    if(out>=in){
+        for(i=in;i<=out;++i){
+            printf(" - %d ",buffer[i]);
+        }
+    }
+    else{
+        for(i=in;i<5;++i){
+            printf(" - %d ",buffer[i]);
+        }
+        for(i=0;i<=out;++i){
+            printf(" - %d ",buffer[i]);
+        }
+    }
+    printf("\n");
+ }
+
+
+SYSTEM CALL   ???????////////
+
+#include<stdio.h>
+#include<stdlib.h>
+#include<unistd.h>
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<sys/wait.h>
+#include<dirent.h>
+#include<time.h>
+
+void create_process() {
+    pid_t pid = fork();
+   
+    if (pid == -1) {
+        perror("fork failed");
+        exit(1);
+    }
+   
+    if (pid == 0) { 
+        printf("Child process ID: %d\n", getpid());
+       
+       
+        execlp("ls", "ls", (char *)NULL);
+       
+        
+        perror("execlp failed");
+        exit(1);
+    } else { 
+        int status;
+        pid_t child_pid = wait(&status); 
+       
+        if (child_pid == -1) {
+            perror("wait failed");
+        } else {
+            printf("Parent process ID: %d\n", getpid());
+            printf("Child process ID: %d\n", child_pid);
+        }
+    }
+}
+
+void print_file_status() {
+    char file_name[100];
+    struct stat file_stat;
+   
+   
+    printf("Enter the file name: ");
+    scanf("%s", file_name);
+   
+   
+    if (stat(file_name, &file_stat) == -1) {
+        perror("stat failed");
+        return;
+    }
+   
+    printf("File status for: %s\n", file_name);
+    printf("Device ID: %ld\n", (long)file_stat.st_dev);
+    printf("Inode: %ld\n", (long)file_stat.st_ino);
+    printf("User ID: %d\n", file_stat.st_uid);
+    printf("Group ID: %d\n", file_stat.st_gid);
+    printf("Size: %ld bytes\n", (long)file_stat.st_size);
+    printf("Blocks: %ld\n", (long)file_stat.st_blocks);
+    printf("Last access time: %s", ctime(&file_stat.st_atime));
+    printf("Last modify time: %s", ctime(&file_stat.st_mtime));
+    printf("Last status change time: %s", ctime(&file_stat.st_ctime));
+}
+
+void list_directory_files() {
+    struct dirent *entry;
+    DIR *dp = opendir(".");
+   
+    if (dp == NULL) {
+        perror("opendir failed");
+        return;
+    }
+   
+    printf("Listing files and directories in current directory:\n");
+   
+    
+    while ((entry = readdir(dp)) != NULL) {
+        printf("%s\n", entry->d_name);
+    }
+   
+    closedir(dp);
+}
+
+int main() {
+    int choice;
+   
+    while (1) {
+        printf("\nMenu:\n");
+        printf("1. Create a process (fork and exec)\n");
+        printf("2. Print file status using stat\n");
+        printf("3. List files and directories in current directory\n");
+        printf("4. Exit\n");
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+       
+        switch (choice) {
+            case 1:
+                create_process();
+                break;
+            case 2:
+                print_file_status();
+                break;
+            case 3:
+                list_directory_files();
+                break;
+            case 4:
+                printf("Exiting...\n");
+                exit(0);
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+   
+    return 0;
+}
+
+
+CPU SCHEDULING ///////////
+
+
+#include <stdio.h>
+
+#define MAX 100
+
+struct Process {
+    int id, at, bt, bt_remaining, priority, ct, wt, tat, completed;
+};
+
+void printTable(struct Process p[], int n) {
+    int total_wt = 0, total_tat = 0;
+    printf("\nProcess Table:\n");
+    printf("|-----|------------|------------|----------|------------|------------|\n");
+    printf("| PID | Arrival AT | Burst BT   | Priority | TAT        | WT         |\n");
+    printf("|-----|------------|------------|----------|------------|------------|\n");
+
+    for (int i = 0; i < n; i++) {
+        p[i].tat = p[i].ct - p[i].at;
+        p[i].wt = p[i].tat - p[i].bt;
+        total_tat += p[i].tat;
+        total_wt += p[i].wt;
+        printf("| %3d | %10d | %10d | %8d | %10d | %10d |\n",
+               p[i].id, p[i].at, p[i].bt, p[i].priority, p[i].tat, p[i].wt);
+    }
+
+    printf("|-----|------------|------------|----------|------------|------------|\n");
+    printf("\nAverage Turnaround Time: %.2f", (float)total_tat / n);
+    printf("\nAverage Waiting Time: %.2f\n", (float)total_wt / n);
+}
+
+void sortByArrival(struct Process p[], int n) {
+    for (int i = 0; i < n - 1; i++) {
+        for (int j = 0; j < n - i - 1; j++) {
+            if (p[j].at > p[j + 1].at) {
+                struct Process temp = p[j];
+                p[j] = p[j + 1];
+                p[j + 1] = temp;
+            }
+        }
+    }
+}
+
+void FCFS(struct Process p[], int n) {
+    int time = 0;
+    printf("\nGantt Chart (FCFS): ");
+    for (int i = 0; i < n; i++) {
+        if (time < p[i].at) time = p[i].at;
+        printf("| P%d ", p[i].id);
+        p[i].ct = time + p[i].bt;
+        time = p[i].ct;
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+void SJF_NonPreemptive(struct Process p[], int n) {
+    int completed = 0, time = 0;
+    printf("\nGantt Chart (SJF Non-Preemptive): ");
+    while (completed < n) {
+        int min_bt = 9999, idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].at <= time && p[i].bt < min_bt) {
+                min_bt = p[i].bt;
+                idx = i;
+            }
+        }
+        if (idx == -1) {
+            time++;
+            continue;
+        }
+        printf("| P%d ", p[idx].id);
+        time += p[idx].bt;
+        p[idx].ct = time;
+        p[idx].completed = 1;
+        completed++;
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+void SRTF(struct Process p[], int n) {
+    int completed = 0, time = 0;
+    printf("\nGantt Chart (SRTF): ");
+    while (completed < n) {
+        int min_bt = 9999, idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].at <= time && p[i].bt_remaining > 0 && p[i].bt_remaining < min_bt) {
+                min_bt = p[i].bt_remaining;
+                idx = i;
+            }
+        }
+        if (idx == -1) {
+            time++;
+            continue;
+        }
+        printf("| P%d ", p[idx].id);
+        p[idx].bt_remaining--;
+        time++;
+        if (p[idx].bt_remaining == 0) {
+            p[idx].ct = time;
+            p[idx].completed = 1;
+            completed++;
+        }
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+void RoundRobin(struct Process p[], int n, int quantum) {
+    int time = 0, completed = 0;
+    printf("\nGantt Chart (Round Robin, Q=%d): ", quantum);
+    while (completed < n) {
+        int executed = 0;
+        for (int i = 0; i < n; i++) {
+            if (p[i].bt_remaining > 0 && p[i].at <= time) {
+                printf("| P%d ", p[i].id);
+                if (p[i].bt_remaining <= quantum) {
+                    time += p[i].bt_remaining;
+                    p[i].bt_remaining = 0;
+                    p[i].ct = time;
+                    completed++;
+                } else {
+                    time += quantum;
+                    p[i].bt_remaining -= quantum;
+                }
+                executed = 1;
+            }
+        }
+        if (!executed) time++;
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+void Priority_NonPreemptive(struct Process p[], int n) {
+    int completed = 0, time = 0;
+    printf("\nGantt Chart (Priority Non-Preemptive): ");
+    while (completed < n) {
+        int highest_priority = 9999, idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].at <= time && p[i].priority < highest_priority) {
+                highest_priority = p[i].priority;
+                idx = i;
+            }
+        }
+        if (idx == -1) {
+            time++;
+            continue;
+        }
+        printf("| P%d ", p[idx].id);
+        time += p[idx].bt;
+        p[idx].ct = time;
+        p[idx].completed = 1;
+        completed++;
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+void Priority_Preemptive(struct Process p[], int n) {
+    int completed = 0, time = 0;
+    printf("\nGantt Chart (Priority Preemptive): ");
+    while (completed < n) {
+        int highest_priority = 9999, idx = -1;
+        for (int i = 0; i < n; i++) {
+            if (!p[i].completed && p[i].at <= time && p[i].priority < highest_priority) {
+                highest_priority = p[i].priority;
+                idx = i;
+            }
+        }
+        if (idx == -1) {
+            time++;
+            continue;
+        }
+        printf("| P%d ", p[idx].id);
+        p[idx].bt_remaining--;
+        time++;
+        if (p[idx].bt_remaining == 0) {
+            p[idx].ct = time;
+            p[idx].completed = 1;
+            completed++;
+        }
+    }
+    printf("|\n");
+    printTable(p, n);
+}
+
+int main() {
+    int n, quantum, choice;
+    struct Process p[MAX];
+
+    printf("Enter number of processes: ");
+    scanf("%d", &n);
+    for (int i = 0; i < n; i++) {
+        printf("Enter Arrival Time, Burst Time, and Priority for Process %d: ", i + 1);
+        scanf("%d %d %d", &p[i].at, &p[i].bt, &p[i].priority);
+        p[i].id = i + 1;
+        p[i].bt_remaining = p[i].bt;
+        p[i].completed = 0;
+    }
+
+    printf("Enter Time Quantum for Round Robin: ");
+    scanf("%d", &quantum);
+
+    sortByArrival(p, n);
+
+    do {
+        printf("\nCPU Scheduling Algorithms:\n");
+        printf("1. FCFS\n2. SJF (Non-Preemptive)\n3. SRTF\n4. Round Robin\n5. Priority (Non-Preemptive)\n6. Priority (Preemptive)\n7. Exit\n");
+        printf("Enter choice: ");
+        scanf("%d", &choice);
+
+        for (int i = 0; i < n; i++) {
+            p[i].bt_remaining = p[i].bt;
+            p[i].completed = 0;
+        }
+
+        switch (choice) {
+            case 1: FCFS(p, n); break;
+            case 2: SJF_NonPreemptive(p, n); break;
+            case 3: SRTF(p, n); break;
+            case 4: RoundRobin(p, n, quantum); break;
+            case 5: Priority_NonPreemptive(p, n); break;
+            case 6: Priority_Preemptive(p, n); break;
+            case 7: printf("Exiting...\n"); break;
+            default: printf("Invalid choice! Try again.\n");
+        }
+    } while (choice != 7);
+
+    return 0;
+}
+
+
+
+
+
+
+
+
+
+
